@@ -1,5 +1,5 @@
-// let mock = require('mock-require');
-// mock('redis', require('fakeredis'));
+const cliHelper = require('./common/cli.helper');
+
 // const headerName = 'Authorization';
 
 // let request = require('supertest');
@@ -23,7 +23,10 @@ describe('Functional Tests keyAuth Policy', () => {
 //   let proxyPolicy = {
 //     proxy: { action: { serviceEndpoint: 'backend' } }
 //   };
-//   before('setup', () => {
+  before('setup', () => {
+    return cliHelper.bootstrapFolder().then(files => {
+      console.log(files);
+    });
 //     config.gatewayConfig = {
 //       http: {
 //         port: 9089
@@ -91,7 +94,7 @@ describe('Functional Tests keyAuth Policy', () => {
 //           ]
 //         }
 //       }
-//     };
+    // };
 
 //     return db.flushdbAsync()
 //       .then(function () {
@@ -124,7 +127,7 @@ describe('Functional Tests keyAuth Policy', () => {
 //               });
 //           });
 //       });
-//   });
+  });
 
 //   after('cleanup', (done) => {
 //     app.close();
@@ -201,7 +204,7 @@ describe('Functional Tests keyAuth Policy', () => {
 //       .end(done);
 //   });
   it('should not authenticate with header of EP allows only query', function (done) {
-    setTimeout(() => done(), 19000);
+    setTimeout(() => done(), 1000);
     // done();
 //     let apikey = 'apiKey ' + user.keyId + ':' + user.keySecret;
 
