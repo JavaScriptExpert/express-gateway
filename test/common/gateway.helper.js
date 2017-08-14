@@ -1,6 +1,15 @@
 const net = require('net');
 const yaml = require('js-yaml');
 const fs = require('fs');
+const assert = require('assert');
+const { exec, fork } = require('child_process');
+const path = require('path');
+const request = require('superagent');
+const { generateBackendServer } =
+  require('../common/server-helper');
+let gatewayPort = null;
+let adminPort = null;
+let backendPort = null;
 module.exports.setGatewayConfig = function ({gatewayConfigPath, newConfig}) {
   fs.writeFileSync(gatewayConfigPath, yaml.dump(newConfig));
 };
@@ -38,39 +47,31 @@ module.exports.findOpenPortNumbers = function (count = 1) {
   });
 };
 
-module.exports.startGatewayInstance = function ({dir}) {
-  return Promise.resolve().then(files => {
-    testGatewayConfigPath = path.join(tempPath, 'gateway.config.yml');
-    return this.findOpenPortNumbers(4);
-  })
+module.exports.startGatewayInstance = function ({dirInfo, gatewayConfig}) {
+  return this.findOpenPortNumbers(4)
       .then(ports => {
+        console.log(ports);
         gatewayPort = ports[0];
         backendPort = ports[1];
         adminPort = ports[2];
-        redirectPort = ports[3];
 
-        return util.promisify(fs.readFile)(testGatewayConfigPath);
-      })
-      .then(configData => {
-        testGatewayConfigData = yaml.load(configData);
+        gatewayConfig.http = {port: gatewayPort};
+        gatewayConfig.admin = {port: adminPort};
 
-        testGatewayConfigData.http.port = gatewayPort;
-        testGatewayConfigData.admin.port = adminPort;
-
-        testGatewayConfigData.serviceEndpoints.backend.url =
+        gatewayConfig.serviceEndpoints.backend.url =
         `http://localhost:${backendPort}`;
-
-        return generateBackendServer(backendPort);
+        return this.setGatewayConfig({
+          gatewayConfigPath: dirInfo.gatewayConfigPath,
+          newConfig: gatewayConfig
+        });
       })
-      .then(() => generateRedirectServer(redirectPort))
       .then(() => {
-        return util.promisify(fs.writeFile)(testGatewayConfigPath,
-          yaml.dump(testGatewayConfigData));
+        return generateBackendServer(backendPort);
       })
       .then(() => {
         return new Promise((resolve, reject) => {
           const childEnv = Object.assign({}, process.env);
-          childEnv.EG_CONFIG_DIR = tempPath;
+          childEnv.EG_CONFIG_DIR = dirInfo.configDirectoryPath;
 
           // Tests, by default have config watch disabled.
           // Need to remove this paramter in the child process.
@@ -78,25 +79,31 @@ module.exports.startGatewayInstance = function ({dir}) {
 
           const modulePath = path.join(__dirname, '..', '..',
             'lib', 'index.js');
-          gatewayProcess = fork(modulePath, [], {
-            cwd: tempPath,
+          let gatewayProcess = fork(modulePath, [], {
+            cwd: dirInfo.basePath,
             env: childEnv
           });
 
           gatewayProcess.on('error', err => {
             reject(err);
           });
-
-          setTimeout(() => {
+          let count = 0;
+          let interval = setInterval(() => {
+            count++;
             request
               .get(`http://localhost:${gatewayPort}/not-found`)
               .end((err, res) => {
-                assert(err);
-                assert(res.clientError);
-                assert(res.statusCode, 404);
-                resolve();
+                if (err && res && res.statusCode === 404) {
+                  clearInterval(interval);
+                  resolve(gatewayProcess);
+                } else {
+                  if (count >= 15) {
+                    gatewayProcess.kill();
+                    reject(new Error('Failed to start Express Gateway'));
+                  }
+                }
               });
-          }, 2000);
+          }, 300);
         });
       });
 };

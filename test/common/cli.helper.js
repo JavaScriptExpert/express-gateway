@@ -20,9 +20,9 @@ module.exports.bootstrapFolder = function (options) {
       }
       resolve({
         basePath: tempDir,
-        configDirectory: path.join(tempDir, 'config'),
-        gatewayConfig: path.join(tempDir, 'config', 'gateway.config.yml'),
-        systemConfig: path.join(tempDir, 'config', 'system.config.yml')
+        configDirectoryPath: path.join(tempDir, 'config'),
+        gatewayConfigPath: path.join(tempDir, 'config', 'gateway.config.yml'),
+        systemConfigPath: path.join(tempDir, 'config', 'system.config.yml')
       });
     });
   });

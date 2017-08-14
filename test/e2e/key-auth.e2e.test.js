@@ -1,19 +1,15 @@
 const cliHelper = require('../common/cli.helper');
+const gwHelper = require('../common/gateway.helper');
 
 // const headerName = 'Authorization';
 
 // let request = require('supertest');
 // let should = require('should');
 
-// let services = require('../../../lib/services');
-// let credentialService = services.credential;
-// let userService = services.user;
-// let serverHelper = require('../../common/server-helper');
-// let db = require('../../../lib/db')();
-// let testHelper = require('../../common/routing.helper');
-// let config = require('../../../lib/config');
-// let originalGatewayConfig = config.gatewayConfig;
-describe('Functional Tests keyAuth Policy', () => {
+let proxyPolicy = {
+  proxy: { action: { serviceEndpoint: 'backend' } }
+};
+describe.only('E2E: keyAuth Policy', () => {
 //   let helper = testHelper();
 //   helper.addPolicy('test', () => (req, res) => {
 //     res.json({ result: 'test', hostname: req.hostname, url: req.url, apiEndpoint: req.egContext.apiEndpoint });
@@ -24,79 +20,73 @@ describe('Functional Tests keyAuth Policy', () => {
 //     proxy: { action: { serviceEndpoint: 'backend' } }
 //   };
   before('setup', () => {
-    return cliHelper.bootstrapFolder().then(files => {
-      console.log(files);
-    });
-//     config.gatewayConfig = {
-//       http: {
-//         port: 9089
-//       },
-//       serviceEndpoints: {
-//         backend: {
-//           url: 'http://localhost:6057'
-//         }
-//       },
-//       apiEndpoints: {
-//         authorizedEndpoint: {
-//           host: '*',
-//           paths: ['/authorizedPath'],
-//           scopes: ['authorizedScope']
-//         },
-//         onlyQueryParamEndpoint: {
-//           host: '*',
-//           paths: ['/by_query']
-//         },
-//         unauthorizedEndpoint: {
-//           host: '*',
-//           paths: ['/unauthorizedPath'],
-//           scopes: ['unauthorizedScope']
-//         }
-//       },
-//       policies: ['key-auth', 'proxy'],
-//       pipelines: {
-//         pipeline1: {
-//           apiEndpoints: ['authorizedEndpoint'],
-//           policies: [{
-//             'key-auth': {
-//               action: {
-//                 apiKeyHeader: 'TEST_HEADER',
-//                 apiKeyHeaderScheme: 'SCHEME1'
-//               }
-//             }
-//           },
-//             proxyPolicy
-//           ]
-//         },
-//         pipeline2: {
-//           apiEndpoints: ['unauthorizedEndpoint'],
-//           policies: [{
-//             'key-auth': [{
-//               action: {
-//                 name: 'keyauth'
-//               }
-//             }]
-//           },
-//             proxyPolicy
-//           ]
-//         },
-//         pipeline_by_query: {
-//           apiEndpoints: ['onlyQueryParamEndpoint'],
-//           policies: [{
-//             'key-auth': [{
-//               action: {
-//                 name: 'keyauth',
-//                 apiKeyField: 'customApiKeyParam',
-//                 disableHeaders: true
-//               }
-//             }]
-//           },
-//             proxyPolicy
-//           ]
-//         }
-//       }
-    // };
+    let gatewayConfig = {
+      serviceEndpoints: {
+        backend: {
+          url: 'http://localhost:6057'
+        }
+      },
+      apiEndpoints: {
+        authorizedEndpoint: {
+          host: '*',
+          paths: ['/authorizedPath'],
+          scopes: ['authorizedScope']
+        },
+        onlyQueryParamEndpoint: {
+          host: '*',
+          paths: ['/by_query']
+        },
+        unauthorizedEndpoint: {
+          host: '*',
+          paths: ['/unauthorizedPath'],
+          scopes: ['unauthorizedScope']
+        }
+      },
+      policies: ['key-auth', 'proxy'],
+      pipelines: {
+        pipeline1: {
+          apiEndpoints: ['authorizedEndpoint'],
+          policies: [{
+            'key-auth': {
+              action: {
+                apiKeyHeader: 'TEST_HEADER',
+                apiKeyHeaderScheme: 'SCHEME1'
+              }
+            }
+          },
+            proxyPolicy
+          ]
+        },
+        pipeline2: {
+          apiEndpoints: ['unauthorizedEndpoint'],
+          policies: [{
+            'key-auth': {}
+          },
+            proxyPolicy
+          ]
+        },
+        pipeline_by_query: {
+          apiEndpoints: ['onlyQueryParamEndpoint'],
+          policies: [{
+            'key-auth': [{
+              action: {
+                apiKeyField: 'customApiKeyParam',
+                disableHeaders: true
+              }
+            }]
+          },
+            proxyPolicy
+          ]
+        }
+      }
+    };
+    return cliHelper.bootstrapFolder().then(dirInfo => {
+      console.log(dirInfo);
+      return gwHelper.startGatewayInstance({dirInfo, gatewayConfig});
+    }).then(gwInfo => {
+      console.log('gwInfo', gwInfo);
+    }).catch(err => console.log(err, 'aaa'));
 
-//     return db.flushdbAsync()
 //       .then(function () {
 //         let user1 = {
 //           username: 'test',
@@ -126,7 +116,6 @@ describe('Functional Tests keyAuth Policy', () => {
 //                   });
 //               });
 //           });
-//       });
   });
 
 //   after('cleanup', (done) => {
