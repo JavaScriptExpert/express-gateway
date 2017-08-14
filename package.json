@@ -36,9 +36,10 @@
     "clean": "rimraf dist/",
     "pretest": "eslint .",
     "test": "npm run mocha-istanbul",
-    "test-unit": "cross-env EG_CONFIG_DIR=test/config EG_DISABLE_CONFIG_WATCH=true mocha --recursive test",
-    "e2e": "mocha --recursive e2e --timeout 20000",
-    "mocha-istanbul": "nyc --reporter=lcov npm run test-unit && nyc report --report=lcov > coverage.lcov && codecov"
+    "test-all": "cross-env EG_CONFIG_DIR=test/config EG_DISABLE_CONFIG_WATCH=true mocha --recursive test --timeout 20000",
+    "test-unit": "cross-env EG_CONFIG_DIR=test/config EG_DISABLE_CONFIG_WATCH=true mocha --recursive test test/!(e2e)/**/*.js --timeout 20000",
+    "e2e": "mocha --recursive test/e2e --timeout 20000",
+    "mocha-istanbul": "nyc --reporter=lcov npm run test-all && nyc report --report=lcov > coverage.lcov && codecov"
   },
   "bin": {
     "eg": "./bin/index.js"

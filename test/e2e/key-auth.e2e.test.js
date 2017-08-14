@@ -1,4 +1,4 @@
-const cliHelper = require('./common/cli.helper');
+const cliHelper = require('../common/cli.helper');
 
 // const headerName = 'Authorization';
 
